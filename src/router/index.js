@@ -1,21 +1,56 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
 
-const routes = [
-  {
-    path: '/',
-    name: 'home',
-    component: HomeView
-  },
-  {
-    path: '/about',
-    name: 'about',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "about" */ '../views/AboutView.vue')
-  }
+let routes = [
+  // {
+  //   path: '/',
+  //   name: 'Welcome',
+  //   component: () => import('@/pages/Welcome.vue')
+  // },
+  // {
+  //   path: '/About',
+  //   name: 'About',
+  //   component: () => import( '@/pages/About.vue')
+  // },
+  // {
+  //   path: '/ManualMode',
+  //   name: 'ManualMode',
+  //   component: () => import('@/pages/ManualMode.vue')
+  // },
+  // {
+  //   path: '/testPage',
+  //   name: 'testPage',
+  //   component: () => import('@/pages/test.vue')
+  // },
+  // {
+  //   path:'/SpectrumMeter',
+  //   name:'SpectrumMeter',
+  //   component:()=>import('@/pages/SpectrumMeter.vue')
+  // },
+  // {
+  //   path:'/Settings',
+  //   name:'Settings',
+  //   component:()=>import('@/pages/Settings.vue')
+  // }
 ]
+const contexts = require.context('@/pages', true, /\.vue$/)
+contexts.keys().forEach(value => {
+  const path = value.substr(value.indexOf('/'), value.lastIndexOf('.') - 1)
+  const componentLocation = value.substr(value.indexOf('.') + 1, value.lastIndexOf('.') - 1)
+  const componentName = componentLocation.substr(componentLocation.lastIndexOf('/') + 1)
+  const route = {
+    path: path,
+    name: componentName,
+    component: () => import(/* webpackChunkName: "alarm" */ `@/pages${componentLocation}`)
+  }
+  //console.log(route)
+  routes.push(route)
+})
+
+routes.push({
+  path: '/',
+  name: 'Main',
+  redirect:'/Home'
+})
 
 const router = createRouter({
   history: createWebHashHistory(),
