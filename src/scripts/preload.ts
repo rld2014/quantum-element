@@ -5,4 +5,3 @@ contextBridge.exposeInMainWorld('window_control', {
     toMinimize: () => ipcRenderer.send('min-app'),
     toMaximize: ()=>ipcRenderer.send('maximize-app')
 })
-console.log('preload injected')

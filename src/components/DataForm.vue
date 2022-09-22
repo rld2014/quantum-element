@@ -12,35 +12,35 @@
         :label="item.title"
         :name="item.name"
       >
-        {{ item.content }}
+      <EditableForm />
       </el-tab-pane>
     </el-tabs>
   </template>
-  <script setup>
+  <script lang="ts" setup>
   import { ref } from 'vue'
-  
+  import EditableForm from '@/components/EditableForm.vue'
   let tabIndex = 2
   const editableTabsValue = ref('2')
   const editableTabs = ref([
     {
-      title: 'Tab 1',
+      title: '测量 1',
       name: '1',
-      content: 'Tab 1 content',
+      componentName:'EditableForm',
     },
     {
-      title: 'Tab 2',
+      title: '测量 2',
       name: '2',
-      content: 'Tab 2 content',
+      componentName:'EditableForm',
     },
   ])
   
-  const handleTabsEdit = (targetName, action) => {
+  const handleTabsEdit = (targetName: string, action: string) => {
     if (action === 'add') {
       const newTabName = `${++tabIndex}`
       editableTabs.value.push({
-        title: 'New Tab',
+        title: `测量 ${editableTabs.value.length+1}`,
         name: newTabName,
-        content: 'New Tab content',
+        componentName:'EditableForm'
       })
       editableTabsValue.value = newTabName
     } else if (action === 'remove') {
@@ -64,7 +64,6 @@
   </script>
   <style>
   .demo-tabs > .el-tabs__content {
-    padding: 32px;
     color: #6b778c;
     font-size: 32px;
     font-weight: 600;

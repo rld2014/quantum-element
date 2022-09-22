@@ -6,6 +6,28 @@
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <link rel="icon" href="<%= BASE_URL %>favicon.ico">
     <title><%= htmlWebpackPlugin.options.title %></title>
+    <!-- <script>
+      window.MathJax = {
+            tex: {
+                inlineMath: [
+                    ['$', '$'],
+                    ['\\(', '\\)']
+                ], // ⾏内公式选择符
+                displayMath: [
+                    ['$$', '$$'],
+                    ['\\[', '\\]']
+                ] // 段内公式选择符
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript','style', 'textarea', 'pre', 'code',
+                'a'], // 避开某些标签
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            }
+        }
+    </script> -->
+    <script src="http://localhost:8098"></script>
+    <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"></script>
   </head>
   <body>
     <noscript>

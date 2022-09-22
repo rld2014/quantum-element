@@ -27,7 +27,7 @@
 <script setup>
 import { useRoute } from "vue-router";
 import { House,Pointer,Camera,Setting,InfoFilled } from "@element-plus/icons-vue";
-import router from "@/router/index.js";
+import router from "@/router/index.ts";
 const route = useRoute();
 </script>
 <style>

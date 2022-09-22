@@ -1,9 +1,8 @@
 <template>
   <el-container style="flex-flow: row; height: 100%">
     <el-container class="VideoContainer">
-      <el-container class="videoView"></el-container>
-      <el-container class="videoControl">
-        <el-slider></el-slider>
+      <el-container class="videoView">
+        <VideoControl />
       </el-container>
     </el-container>
     <el-main class="FormContainer">
@@ -13,11 +12,9 @@
 </template>
 <script setup>
 import DataForm from "@/components/DataForm.vue";
+import VideoControl from '@/components/VideoControl.vue'
 </script>
 <style scoped>
-/* div{
-    display:flex
-  } */
 .VideoContainer {
   flex-flow: column;
   width: 50%;
@@ -39,6 +36,7 @@ import DataForm from "@/components/DataForm.vue";
   margin-right: 15px;
 }
 .FormContainer {
-  width:40%
+  width:40%;
+  margin-right:10px ;
 }
 </style>
