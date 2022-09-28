@@ -22,7 +22,7 @@ import VideoControl from '@/components/VideoControl.vue'
   bottom: 45px;
   border-width: 3px;
   margin-bottom: 40px;
-  border-right: 1px solid var(--el-border-color);
+  
 }
 .videoView {
   display: flex;
@@ -38,5 +38,7 @@ import VideoControl from '@/components/VideoControl.vue'
 .FormContainer {
   width:40%;
   margin-right:10px ;
+  overflow: hidden;
+  border-left: 1px solid var(--el-border-color);
 }
 </style>

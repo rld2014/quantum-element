@@ -4,3 +4,8 @@ export class SaveLoadManager{
     exportAsExcel(){}
     
 }
+export function unFocus (event) {
+    console.log('bluring button')
+    event.target.blur();
+      event.target.parentNode.blur();
+  }

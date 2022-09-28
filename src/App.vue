@@ -27,6 +27,9 @@ body.setAttribute("style", "margin:0;overflow:hidden");
 </script>
 
 <style>
+  html, body {
+    height: 100%;
+}
 .el-container {
   background-color: var(--el-bg-color);
 }
@@ -51,8 +54,6 @@ body.setAttribute("style", "margin:0;overflow:hidden");
   vertical-align: baseline;
   box-sizing: border-box;
 }
-html,
-body,
 #app,
 .el-table .content {
   margin: 0;
@@ -63,10 +64,13 @@ body,
   height: 100%;
   user-select: none;
 }
+
 .main_footer {
   /* position: absolute; */
+  position:sticky;
+  bottom: 0;
   height: 20px;
-
+  margin-top: auto;
   background-color: var(--el-color-primary);
   z-index: 114514;
 }

@@ -4,6 +4,7 @@ import { app, protocol, BrowserWindow, screen, ipcMain } from 'electron'
 import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 import installExtension, { VUEJS3_DEVTOOLS } from 'electron-devtools-installer'
 const path = require('path')
+import * as cv from 'opencv4nodejs'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const renderProcessApi = path.join(__dirname, '../src/scripts/preload.ts')
 const DESIGN_MAINWINDOW_WIDTH: number = 1280
@@ -72,4 +73,5 @@ async function createWindow() {
 }
 app.on('ready', async () => {
   createWindow()
+  console.log(cv.version)
 })

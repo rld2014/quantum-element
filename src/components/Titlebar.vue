@@ -1,22 +1,12 @@
 <template>
-  <el-header
-    class="titlebar-container"
-    height="25px"
-    style="background-color: var(--el-color-primary-light-8)"
-  >
-  <img src="../assets/logo_trans_32.png">
-  <el-menu
-    default-active="activeIndex"
-    class="el-menu-demo"
-    mode="horizontal"
-    menu-trigger="hover"
-    :ellipsis="false"
-  >
-  <ToolbarMenuItems>
-  </ToolbarMenuItems>
-  </el-menu>
-  <el-row style="display:flex;align-self=center">{{this.title}}</el-row>
-  <WindowCtrl />
+  <el-header class="titlebar-container" height="25px" style="background-color: var(--el-color-primary-light-8)">
+    <img src="../assets/logo_trans_32.png">
+    <el-menu default-active="activeIndex" class="el-menu-demo" mode="horizontal" menu-trigger="hover" :ellipsis="false">
+      <ToolbarMenuItems>
+      </ToolbarMenuItems>
+    </el-menu>
+    <el-row style="display:flex;align-self=center">{{this.title}}</el-row>
+    <WindowCtrl />
   </el-header>
 </template>
 <style>
@@ -26,10 +16,12 @@
   flex-direction: row;
   padding: 0;
 }
+
 .WindowCtrl {
   display: flex;
   margin-left: auto;
 }
+
 .el-row {
   margin-left: auto;
   margin-right: auto;
@@ -38,6 +30,7 @@
   text-align: end;
   font-size: 12px;
 }
+
 .el-menu {
   -webkit-app-region: no-drag;
   border-width: 0;

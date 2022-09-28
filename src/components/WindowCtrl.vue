@@ -1,46 +1,25 @@
-<script>
-export default {
-  name: "WindowCtrl",
-  methods: {
-    closeWindow: function () {
-      window.window_control.toClose();
-    },
-    minimizeWindow: function () {
-      window.window_control.toMinimize();
-    },
-    maximizeWindow: function () {
-      window.window_control.toMaximize();
-    },
-    unFocus: function (event) {
-      console.log('bluring button')
-      event.target.blur();
-        event.target.parentNode.blur();
-    },
-  },
-};
+<script setup>
+import { unFocus } from '@/scripts/utils';
+
+
+const closeWindow = function () {
+  window.window_control.toClose();
+}
+const minimizeWindow = function () {
+  window.window_control.toMinimize();
+}
+const maximizeWindow = function () {
+  window.window_control.toMaximize();
+}
+
 </script>
 <template>
   <el-button-group style="margin-left:auto">
-    <el-button
-      class="minimize-btn"
-      icon="Minus"
-      v-on:click="minimizeWindow()"
-      @focus="unFocus($event)"
-    ></el-button>
-    <el-button
-      class="maximize-btn"
-      icon="FullScreen"
-      v-on:click="maximizeWindow()"
-      @focus="unFocus($event)"
-      style="margin-left: 0"
-    ></el-button>
-    <el-button
-      class="window-close-btn"
-      icon="Close"
-      v-on:click="closeWindow()"
-      @focus="unFocus($event)"
-      style="margin-left: 0"
-    ></el-button>
+    <el-button class="minimize-btn" icon="Minus" v-on:click="minimizeWindow()" @focus="unFocus($event)"></el-button>
+    <el-button class="maximize-btn" icon="FullScreen" v-on:click="maximizeWindow()" @focus="unFocus($event)"
+      style="margin-left: 0"></el-button>
+    <el-button class="window-close-btn" icon="Close" v-on:click="closeWindow()" @focus="unFocus($event)"
+      style="margin-left: 0"></el-button>
   </el-button-group>
 </template>
 <style>
@@ -58,7 +37,8 @@ export default {
   -webkit-app-region: no-drag;
   margin-left: 0;
 }
-.window-close-btn:hover{
+
+.window-close-btn:hover {
   background-color: var(--el-color-danger-light-3);
   color: var(--el-text-color-primary);
 }

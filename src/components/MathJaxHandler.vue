@@ -26,11 +26,17 @@ export default {
                 if (!MathJax.isMathjaxConfig) { // 是否配置MathJax
                     MathJax.initMathjaxConfig()
                 }
-                console.log(MathJax.isMathjaxConfig)
                 MathJax.MathQueue('latexDiv') // 渲染对应的id/class
             })
         }
     }
 }
 </script>
+<style>
+    .latexDiv{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
   
