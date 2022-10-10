@@ -3,8 +3,9 @@
     <el-header class="streamSpecs">
       <el-row>
         <p>视频设备: </p>
-        <el-select v-model="vidSrcOption" class="options" placeholder="设备" @change="onDeviceChanged">
-          <el-option v-for="option in sourceOptionList" :key="option.deviceId" :label="option.label" :value="option" />
+        <el-select v-model="videoDeviceID" class="options" placeholder="设备" @change="onDeviceChanged">
+          <el-option v-for="option in sourceOptionList" :key="option.deviceId" :label="option.label"
+            :value="option.deviceId" />
         </el-select>
         <p>分辨率: </p>
         <el-select v-model="vidResOption" class="options" placeholder="分辨率" @change="onOpitonsChanged">
@@ -25,36 +26,34 @@
       </el-main>
     </el-scrollbar>
     <el-scrollbar style="height:20%;">
-      <el-row class="optionSlider" id="exposureTime" disabled="true" v-model="exposureTime">
-        <el-col :span="3" style="align-items:flex-start">
-          <p>曝光时间:</p>
-        </el-col>
-        <el-col :span="20">
-          <el-slider class="exposuretime" show-input></el-slider>
-        </el-col>
-      </el-row>
-      <el-row class="optionSlider" id="iso" disabled="true" v-model="iso">
-        <el-col :span="3" style="align-items:flex-start">
-          <p>感光度:</p>
-        </el-col>
-        <el-col :span="20">
-          <el-slider class="iso" show-input ></el-slider>
-        </el-col>
-      </el-row>
+      <div class="block" v-for="setting in enabledSettings">
+        <span>{{setting.name}}</span>
+        <el-select v-if="setting.modes" v-model="setting.value">
+          <el-option v-for="item in setting.modes" :value="item" :label="item"
+            :v-on:change="onParametersChanged(setting)">
+          </el-option>
+        </el-select>
+        <el-slider v-if="setting.max" v-model="setting.value" :max="setting.max" :min="setting.min" :step="setting.step"
+          :v-on:change="onParametersChanged(setting)"></el-slider>
+      </div>
+      <div v-if="enabledSettings.length===0" style="text-align:center">
+        该相机不受支持，无法调整参数<br>
+        请尝试使用其它相机, 或在设置中打开“使用openCV调整相机参数”<br>
+        请注意: 即使使用OpenCV, 某些相机仍然无法正常调整参数
+      </div>
     </el-scrollbar>
   </el-container>
 </template>
 <script lang="ts" setup>
-import { nextTick } from 'process';
-import { onMounted, ref } from 'vue';
-const vidSrcOption = ref<videoSourceOption>({})
-const vidResOption = ref<videoResolutionOption>({})
-const exposureTime = ref<ConstrainULong>(50)
-const iso=ref(50)
-const exposureTimeDisabled = ref(true)
-const isoDisabled=ref(true)
-const exposureTimeSlider = document.querySelector('optionSlider#exposureTime')
-const isoSlider = document.querySelector('optionSlider#iso')
+import { onBeforeUnmount, onMounted, ref } from 'vue';
+import pinia from '@/storages'
+import { useSettings } from '@/storages/settings'
+import { storeToRefs } from 'pinia';
+const videoDeviceID = ref()
+const vidResOption = ref<videoResolutionOption>()
+const settings = useSettings(pinia)
+const { desiredVideoSettings } = storeToRefs(settings)
+const enabledSettings = ref([])
 let currentStream: MediaStream
 interface videoSourceOption {
   label: String,
@@ -72,10 +71,18 @@ let onInit = true
 var sourceOptionList = ref<videoSourceOption[]>([])
 var resoloutionOptionList = ref<videoResolutionOption[]>([])
 async function onDeviceChanged() {
+  currentStream.getVideoTracks().forEach(track => track.stop())
+  console.log(videoDeviceID.value)
   const constraints: MediaStreamConstraints = {
-    video: { deviceId: vidSrcOption.value.deviceId }
+    video: { deviceId: videoDeviceID.value }
   };
   navigator.mediaDevices.getUserMedia(constraints).then(initStreamSettings).then(initDeviceList)
+}
+async function onParametersChanged(setting) {
+  let constraints = { advanced: [] }
+  constraints.advanced.push({ [setting.propName]: setting.value })
+  const video = document.querySelector('video')
+  currentStream.getVideoTracks().forEach(async track => await track.applyConstraints(constraints))
 }
 async function onOpitonsChanged() {
   currentStream.getVideoTracks().forEach((track: MediaStreamTrack) => {
@@ -83,12 +90,12 @@ async function onOpitonsChanged() {
   });
   const constraints: MediaStreamConstraints = {
     video: {
-      deviceId: vidSrcOption.value.deviceId,
-      width: { exact: vidResOption.value.value.width },
+      deviceId: videoDeviceID.value,
+      width: vidResOption.value.value.width,
       height: vidResOption.value.value.height
     }
-
   };
+  console.log(sourceOptionList)
   console.log(constraints)
   currentStream = await navigator.mediaDevices.getUserMedia(constraints)
   document.querySelector('video').srcObject = currentStream
@@ -106,10 +113,11 @@ async function initDeviceList(deviceInfos) {
     }
   }
   if (onInit) {
-    vidSrcOption.value = sourceOptionList.value[0]
+    videoDeviceID.value = sourceOptionList.value[0].deviceId
+    onInit=false
   }
 }
-async function initStreamSettings(stream: MediaStream) {
+async function initStreamSettings(stream: MediaStream, onRefresh: boolean = false) {
   const track = stream.getVideoTracks()[0]
   const trackCapabilities = track.getCapabilities()
   const { width, height } = { width: trackCapabilities.width.max, height: trackCapabilities.height.max, }
@@ -130,14 +138,36 @@ async function initStreamSettings(stream: MediaStream) {
     )
     div *= 1.5
   }
-  if(trackCapabilities.exposuretime){
-
-  }
   const settings = track.getSettings()
+  enabledSettings.value = []
+  for (const setting of desiredVideoSettings.value) {
+    if (!(setting.propName in settings)) {
+      continue;
+    }
+    let enabledSetting = setting
+    if (Array.isArray(trackCapabilities[setting.propName])) {
+      // Map it to a select element.
+      Object.assign(enabledSetting, {
+        modes: trackCapabilities[setting.propName],
+        value: settings[setting.propName]
+      })
+    } else {
+      // Map it to a slider element.
+      Object.assign(enabledSetting, {
+        min: trackCapabilities[setting.propName].min,
+        max: trackCapabilities[setting.propName].max,
+        step: trackCapabilities[setting.propName].step,
+        value: settings[setting.propName],
+      })
+    }
+    console.log(enabledSetting)
+    enabledSettings.value.push(enabledSetting)
+  }
   vidResOption.value = resoloutionOptionList.value[0]
-  currentStream = stream
+
   const video = document.querySelector('video')
   video.srcObject = stream
+  currentStream = stream
   // Refresh button list in case labels have become available
   return navigator.mediaDevices.enumerateDevices();
 }
@@ -150,14 +180,17 @@ async function start() {
     const constraints: MediaStreamConstraints = {
       video: { deviceId: sourceOptionList.value[0].deviceId }
     };
-    navigator.mediaDevices.getUserMedia(constraints).then(initStreamSettings).then(initDeviceList).then(onOpitonsChanged);
-  })
+    navigator.mediaDevices.getUserMedia(constraints).then(initStreamSettings).then(initDeviceList).then(onOpitonsChanged).catch(handleError);
+  }).catch(handleError)
 }
 onMounted(async () => {
+
+  console.log(desiredVideoSettings)
   console.log(navigator.mediaDevices.getSupportedConstraints())
-  await start();
-  console.log('in OnMounted()', vidSrcOption, vidResOption)
+  start();
 })
+
+
 </script>
 <style scoped>
 .el-container {
@@ -193,16 +226,18 @@ p {
 .videoOverlay {
   display: flex;
   align-items: center;
-
+  justify-content: center;
   position: absolute;
   top: 0px;
   left: 0px;
   width: 100%;
+  height: 100%;
 }
 
 .crossline {
-  width: 20%;
-  margin-left: 40%;
-  margin-top: 18.1%;
+  display: flex;
+  height: 80px;
+  justify-content: center;
+  align-items: center;
 }
 </style>

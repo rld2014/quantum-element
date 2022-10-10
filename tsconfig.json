@@ -36,7 +36,7 @@
     "src/**/*.vue",
     "tests/**/*.ts",
     "tests/**/*.tsx"
-, "src/scripts/MathJax.js"  ],
+, "src/scripts/MathJax.js", "src/scripts/preload.js"  ],
   "exclude": [
     "node_modules"
   ]

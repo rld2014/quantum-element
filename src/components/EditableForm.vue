@@ -2,7 +2,7 @@
   <el-container style="font-size:15px;align-items: center; justify-content: flex-end;">
     光栅线数:<el-input v-model="gratingLineDensity" type="number" style="width:150px" size="default"></el-input>
   </el-container>
-  <el-table class='table' :data="Measurements" :row-style="{height: 35+'px'}"
+  <el-table class='table' :data="tableMeasurements" :row-style="{height: 35+'px'}"
     :header-cell-style="{'text-align':'center'}" :max-height=maxTableHeight>
     <el-table-column type="index" :label="'编号'" :width="55"></el-table-column>
     <el-table-column class="cols" prop='level' width="130">
@@ -75,10 +75,13 @@
   </el-container>
 </template>
 <script lang="ts" setup>
-import { Ref, ref } from "@vue/reactivity";
+import { ref } from "@vue/reactivity";
 import MathJaxHandler from '@/components/MathJaxHandler.vue'
-import { onMounted } from "vue";
+import { onMounted, onUnmounted } from "vue";
 import { nextTick } from "process";
+import pinia from '@/storages'
+import { useMeasurements } from '@/storages/measurements'
+import { storeToRefs } from "pinia";
 class ResultHolder {
   wavelength: number;
   variance: Map<number, number>
@@ -97,13 +100,7 @@ class highPrecAngle {
     return !(!this.degree && !this.minute && !this.second)
   }
   getValueInDegs() {
-    let deg: number = Number(this.degree ?? 0)
-    let min: number = Number(this.minute ?? 0) / 60.
-    let sec: number = Number(this.second ?? 0) / 3600.
-    console.log(deg, min, sec)
-    let res = deg + min + sec
-    console.log(res)
-    return res
+    return Number(this.degree ?? 0) + Number(this.minute ?? 0) / 60. + Number(this.second ?? 0) / 3600.
   }
   constructor(deg: number, minute: number, second: number) {
     this.degree = deg
@@ -117,31 +114,41 @@ interface measurement {
   level: number;
   theta: number;
 }
-const Measurements = ref<measurement[]>([]);
+const props = defineProps({ 'index': String })
+const measurementStore = useMeasurements(pinia)
+let { measurements } = storeToRefs(measurementStore)
+let tableMeasurements = ref([]);
+
+
 let maxTableHeight = ref(0);
+
 const getTableHeight = () => {
   nextTick(() => {
-    console.log('resizing...')
     let box = document.querySelector("#tableContainer")
-    let box_clientHeight = box.clientHeight
-    maxTableHeight.value = box_clientHeight - 41 - 15 - 39.2 - 35;
+    maxTableHeight.value = box.clientHeight - 41 - 15 - 39.2 - 35;
   })
 }
+
 onMounted(() => {
-  for (let i = 0; i < 5; i++) {
-    Measurements.value.push({
-      __alpha1: new highPrecAngle(undefined, undefined, undefined),
-      __alpha2: new highPrecAngle(undefined, undefined, undefined),
-      level: undefined,
-      theta: undefined,
-    })
+  if (measurements.value.get(props.index) == undefined) {
+    measurements.value.set(props.index, [])
+  }
+  tableMeasurements.value = measurements.value.get(props.index)
+  if (!tableMeasurements.value.length) {
+    for (let i = 0; i < 5; i++) {
+      tableMeasurements.value.push({
+        __alpha1: new highPrecAngle(undefined, undefined, undefined),
+        __alpha2: new highPrecAngle(undefined, undefined, undefined),
+        level: undefined,
+        theta: undefined,
+      })
+    }
   }
   getTableHeight()
   window.addEventListener('resize', getTableHeight)
 })
-
+onUnmounted(() => window.removeEventListener('resize', getTableHeight))
 async function onChanged(row: measurement) {
-  console.log(row)
   if (row.__alpha1.isValid() && row.__alpha2.isValid()) {
     row.theta =
       Math.abs(row.__alpha1.getValueInDegs() - row.__alpha2.getValueInDegs()) / 2.
@@ -149,7 +156,8 @@ async function onChanged(row: measurement) {
 }
 
 function onAddItem() {
-  Measurements.value.push({
+  console.log('in onAddItem:', measurements.value.get(props.index))
+  tableMeasurements.value.push({
     __alpha1: new highPrecAngle(undefined, undefined, undefined),
     __alpha2: new highPrecAngle(undefined, undefined, undefined),
     level: undefined,
@@ -157,7 +165,8 @@ function onAddItem() {
   })
 }
 
-const onDeleteRow = async (row: measurement) => Measurements.value.splice(Measurements.value.indexOf(row), 1)
+const onDeleteRow = async (row: measurement) =>
+  tableMeasurements.value.splice(measurements.value.get(props.index).indexOf(row), 1)
 const emit = defineEmits(['gotResult'])
 
 function checkResult() {
@@ -167,7 +176,7 @@ function checkResult() {
   if (!gratingLineDensity.value) {
     return;
   }
-  Measurements.value.forEach(measurement => {
+  tableMeasurements.value.forEach(measurement => {
     if (measurement.level) {
       if (measurement.theta) {
         if (thetas[measurement.level] === undefined) {
@@ -187,7 +196,6 @@ function checkResult() {
       res.wavelength += Math.sin(mean * Math.acos(-1) / 180) * 1E6 / gratingLineDensity.value
     })
     res.wavelength /= thetas.size
-    console.log('result:', res)
     emit('gotResult', res)
   }
 }
