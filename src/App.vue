@@ -5,10 +5,10 @@
   >
     <Titlebar />
     <el-container style="height: 100%" direction="horizontal">
-      <el-aside width="200px">
+      <el-aside width="auto">
         <Aside></Aside>
       </el-aside>
-      <el-main>
+      <el-main style="width:100%">
         <router-view class="content" />
       </el-main>
     </el-container>
