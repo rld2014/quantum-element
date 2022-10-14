@@ -39,8 +39,9 @@ export const useMeasurements = defineStore({
   id: 'measurements',
   state: () => {
     return {
-      measurements: new Map<string,measurement[]>(),
-      results: new Map<string,ResultHolder>()
+      gratingLineDensities: new Map<string, number>(),
+      measurements: new Map<string, measurement[]>(),
+      results: new Map<string, ResultHolder>()
     }
   }
 })

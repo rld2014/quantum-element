@@ -2,13 +2,13 @@
   <el-main id='tableContainer' style="height:50%;overflow: hidden;">
     <el-tabs v-model="editableTabsValue" type="card" editable class="demo-tabs" @edit="handleTabsEdit">
       <el-tab-pane v-for=" item,index in editableTabs" :key="item.name" :label="item.title" :name="item.name">
-        <EditableForm :index="String(index)" @got-result="handleGotResult" />
+        <EditableForm :index="String(index+1)" @got-result="handleGotResult" />
       </el-tab-pane>
     </el-tabs>
   </el-main>
   <el-table :data="results">
-    <el-table-column prop="key" label="序号" sortable ></el-table-column>
-    <el-table-column  type='expand'>
+    <el-table-column prop="key" label="序号" sortable></el-table-column>
+    <el-table-column type='expand'>
       <template #default="props">
         <el-table :data="props.row.variances">
           <h3>各级方差</h3>
@@ -25,21 +25,37 @@ import { onMounted, ref } from 'vue'
 import EditableForm from '@/components/EditableForm.vue'
 import { useMeasurements } from '@/storages/measurements'
 import { storeToRefs } from "pinia";
+import pinia from '@/storages';
 let tabIndex = 2
 const editableTabsValue = ref('1')
-const editableTabs = ref([
-  {
-    title: '测量 1',
-    name: '1',
-    componentName: 'EditableForm',
-  },
-  {
-    title: '测量 2',
-    name: '2',
-    componentName: 'EditableForm',
-  },
-])
-
+const editableTabs = ref([])
+const measurementStore = useMeasurements(pinia)
+const { measurements, gratingLineDensities } = storeToRefs(measurementStore)
+onMounted(() => {
+  if (measurements.value.size === 0) {
+    editableTabs.value = [
+      {
+        title: '测量 1',
+        name: '1',
+        componentName: 'EditableForm',
+      },
+      {
+        title: '测量 2',
+        name: '2',
+        componentName: 'EditableForm',
+      },
+    ]
+  }
+  else {
+    measurements.value.forEach((item, key) => {
+      editableTabs.value.push({
+        title: `测量 ${key}`,
+        name: key,
+        componentName: 'EditableForm'
+      })
+    })
+  }
+})
 const handleTabsEdit = (targetName: string, action: string) => {
   if (action === 'add') {
     const newTabName = `${++tabIndex}`
@@ -64,6 +80,8 @@ const handleTabsEdit = (targetName: string, action: string) => {
     }
     editableTabsValue.value = activeName
     editableTabs.value = tabs.filter((tab) => tab.name !== targetName)
+    measurements.value.delete(targetName)
+    gratingLineDensities.value.delete(targetName)
   }
 }
 class ResultHolder {
@@ -88,7 +106,7 @@ function handleGotResult(res: ResultHolder) {
       level: key, val: value
     })
   })
-  results.value.push({ key: editableTabsValue.value, wavelength: res.wavelength, variances:variances})
+  results.value.push({ key: editableTabsValue.value, wavelength: res.wavelength, variances: variances })
 }
 
 </script>

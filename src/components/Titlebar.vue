@@ -14,7 +14,9 @@
   -webkit-app-region: drag;
   display: flex;
   flex-direction: row;
+  height:32px !important ; 
   padding: 0;
+  height: auto;
 }
 
 .WindowCtrl {

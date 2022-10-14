@@ -14,7 +14,7 @@
   "main": "background.js",
   "dependencies": {
     "core-js": "^3.8.3",
-    "echarts": "^5.3.3",
+    "echarts": "^5.4.0",
     "electron": "^20.1.2",
     "electron-rebuild": "^3.2.9",
     "element-plus": "^2.2.16",

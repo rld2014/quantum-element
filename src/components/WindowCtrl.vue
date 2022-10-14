@@ -14,21 +14,29 @@ const maximizeWindow = function () {
 
 </script>
 <template>
-  <el-button-group style="margin-left:auto">
+  <div class="buttonContainer">
     <el-button class="minimize-btn" icon="Minus" v-on:click="minimizeWindow()" @focus="unFocus($event)"></el-button>
     <el-button class="maximize-btn" icon="FullScreen" v-on:click="maximizeWindow()" @focus="unFocus($event)"
       style="margin-left: 0"></el-button>
     <el-button class="window-close-btn" icon="Close" v-on:click="closeWindow()" @focus="unFocus($event)"
       style="margin-left: 0"></el-button>
-  </el-button-group>
+  </div>
 </template>
 <style>
+.buttonContainer{
+  display: flex;
+  margin-left: auto;
+  justify-items: center;
+}
+
 .minimize-btn,
 .maximize-btn,
 .window-close-btn {
+  display: flex;
+  justify-content: center;
   align-self: flex-end;
   width: 40px;
-  height: 25px;
+  height: -webkit-fill-available;
   margin: 0;
   padding: 0;
   border-radius: 0;

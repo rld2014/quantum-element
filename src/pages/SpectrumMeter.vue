@@ -1,6 +1,6 @@
 <template>
   <el-container direction:vertical="true" style="height:100%; flex-flow:column">
-    <el-header style="display:flex;flex-flow:row;height: min-content; justify-content: center;">
+    <el-header style="display:flex;flex-flow:row;height: min-content; justify-content: center; padding: 5px;">
       <span style="display:flex;align-items: center;">设备</span>
       <el-select v-model="videoDeviceID" class="options" placeholder="设备" @change="onOpitonsChanged">
         <el-option v-for="option in sourceOptionList" :key="option.deviceId" :label="option.label"
@@ -20,21 +20,22 @@
         <canvas class="videoOverlay" id="overlay" width="1000" height="500"></canvas>
       </div>
       <div style="flex-flow:column; width:30%">
-        <el-table style="width:100%" :data="caliblines" :max-height="maxTableHeight">
-          <el-table-column prop="wavelength" label="对应波长">
+        <el-table :data="caliblines" :row-style="{height: 35+'px'}" :max-height="maxTableHeight">
+
+          <el-table-column prop="wavelength" label="对应波长" width="120px">
             <template #default="scope">
               <el-input v-model="scope.row.wavelength" type="number" min="0" max="10000" step="0.1"
                 v-on:change="onCalibLineModified()"></el-input>
             </template>
           </el-table-column>
-          <el-table-column prop="position" label="纵向相对位置">
+          <el-table-column prop="position" label="纵向相对位置" width="120px">
             <template #default="scope">
               <el-input v-model="scope.row.position" type="number" min="0" max="1" step="0.001"
                 v-on:change="onCalibLineModified()">
               </el-input>
             </template>
           </el-table-column>
-          <el-table-column fixed="right" label="操作">
+          <el-table-column fixed="right" label="操作" width="150px">
             <template #default="scope">
               <el-button type="primary" size="small" plain @click.prevent="onInsertLine($event,scope.row)">
                 插入
@@ -46,6 +47,7 @@
             </template>
           </el-table-column>
         </el-table>
+
       </div>
     </el-main>
     <el-main class="lowerContainer">
@@ -62,10 +64,12 @@ import pinia from '@/storages';
 import { useSpectrumMeterConfig } from '@/storages/spectrumMeterCfg'
 import { storeToRefs } from 'pinia';
 import { unFocus } from '@/scripts/utils';
+const playBtnIcon = require('@/assets/playBtn.svg')
+const pauseBtnIcon = require('@/assets/pauseBtn.svg')
 const config = useSpectrumMeterConfig(pinia)
 const { calibLines: calibLineStore, rowBegin: rowBeginStore, rowEnd: rowEndStore } = storeToRefs(config)
 let caliblines = ref([])
-var myChart;
+var spectrumChart;
 let chartContainer;
 const sourceOptionList = ref([])
 const videoDeviceID = ref()
@@ -74,10 +78,11 @@ let currentStream;
 let overlayCanvas: HTMLCanvasElement;
 let videoInput: HTMLVideoElement, videoProcCanvas: HTMLCanvasElement;
 let vidProcContext: CanvasRenderingContext2D;
-let vidProcTimer;
+var vidProcTimer;
 let rowBegin = ref(0.35)
 let rowEnd = ref(0.65)
-
+const currentData = ref([])
+const markPointData = ref([])
 async function onDeleteRow(event, row) {
   unFocus(event)
   caliblines.value.splice(caliblines.value.indexOf(row), 1)
@@ -85,16 +90,26 @@ async function onDeleteRow(event, row) {
 }
 
 async function onCalibLineModified() {
-  validRange()
+  if (!isRangesValidated()) return;
   let context = overlayCanvas.getContext('2d')
   const { width, height } = overlayCanvas
   context.lineWidth = 1
   context.strokeStyle = "rgba(0,0,0,1)"
   context.clearRect(0, 0, width, height)
-  context.fillStyle = "rgba(0, 0, 200, 0.5)"
-  context.strokeStyle = 'rgb(0,0,0)'
-  context.fillRect(0, height * rowBegin.value, width, height * (rowEnd.value - rowBegin.value))
-  context.strokeRect(0, height * rowBegin.value, width, height * (rowEnd.value - rowBegin.value))
+  context.fillStyle = "rgba(64, 158, 255, 0.5)"
+  context.strokeStyle = 'rgb(76,77,78)'
+  context.fillRect(
+    caliblines.value.at(0).position * width,  //x
+    height * rowBegin.value,                  //y
+    (caliblines.value.at(-1).position - caliblines.value.at(0).position) * width, //width
+    height * (rowEnd.value - rowBegin.value)  //height
+  )
+  context.strokeRect(
+    caliblines.value.at(0).position * width,
+    height * rowBegin.value,
+    (caliblines.value.at(-1).position - caliblines.value.at(0).position) * width,
+    height * (rowEnd.value - rowBegin.value)
+  )
   context.beginPath()
   caliblines.value.forEach(line => {
     context.moveTo(line.position * width, 0)
@@ -102,7 +117,7 @@ async function onCalibLineModified() {
   })
   context.stroke()
 }
-function validRange() {
+function isRangesValidated() {
   if (rowBegin.value >= rowEnd.value) {
     rowBegin.value = rowEnd.value - 0.01
   }
@@ -110,6 +125,14 @@ function validRange() {
     line.wavelength = Number(line.wavelength),
       line.position = Number(line.position)
   })
+  for (let i = 0; i < caliblines.value.length - 1; i++) {
+    if (caliblines.value[i].wavelength >= caliblines.value[i + 1].wavelength
+      || caliblines.value[i].position >= caliblines.value[i + 1].position
+    ) {
+      return false
+    }
+  }
+  return true
 }
 async function onInsertLine(event, row) {
   unFocus(event)
@@ -126,8 +149,8 @@ async function onInsertLine(event, row) {
   onCalibLineModified()
 }
 onMounted(() => {
-  myChart = echarts.init(document.getElementById('resultChart'), 'dark');
-  myChart.setOption({
+  spectrumChart = echarts.init(document.getElementById('resultChart'), 'dark');
+  spectrumChart.setOption({
     title: {
       text: '相对强度'
     },
@@ -141,9 +164,19 @@ onMounted(() => {
     },
     toolbox: {
       feature: {
+        myPlay: {
+          show: true,
+          title: '开始采集',
+          icon: `image://${playBtnIcon}`,
+          onclick: async function () {
+            if (!vidProcTimer) {
+              vidProcTimer = setInterval(doVideoProcessing, 50)
+            }
+          }
+        },
         dataView: { show: true, readOnly: false },
         restore: { show: true },
-        saveAsImage: { show: true }
+        saveAsImage: { show: true },
       }
     },
     dataZoom: [
@@ -188,6 +221,13 @@ onMounted(() => {
       }
     ]
   });
+  spectrumChart.showLoading(
+    {
+      color: '#2a598a',
+      maskColor: 'rgba(0, 0, 0, 0.8)',
+      textColor: '#A3A6AD'
+    }
+  )
   chartContainer = document.getElementById('resultChart')
 
   start()
@@ -218,9 +258,34 @@ onMounted(() => {
   vidProcContext = videoProcCanvas.getContext('2d')
   videoInput.onplay = initVideoProcessing()
   onCalibLineModified()
+  spectrumChart.on('dblclick', function (params) {
+    console.log(params.componentType)
+    if (params.componentType == 'markPoint') {
+      console.log(markPointData.value.splice(markPointData.value.findIndex(_data => _data.coord[0] == params.data[0]), 1))
+      return
+    }
+    markPointData.value.push({
+      coord: params.data,
+      value: `${params.data[0]}nm\n ${params.data[1]}`,
+      symbol: 'pin',
+      animation: true,
+      label: {
+        show: true,
+        color: '#e5eaf3'
+      }
+    })
+    spectrumChart.setOption({
+      series: {
+        data: currentData.value,
+        markPoint: markPointData.value
+      }
+    })
+  })
 })
 
 let maxTableHeight = ref(0);
+
+
 
 async function resizeTable() {
   nextTick(() => {
@@ -229,7 +294,7 @@ async function resizeTable() {
 }
 async function resizeChart() {
   nextTick(() => {
-    myChart.resize({
+    spectrumChart.resize({
       width: chartContainer.clientWidth,
       height: chartContainer.clientHeight - 35
     })
@@ -238,26 +303,37 @@ async function resizeChart() {
 async function initVideoProcessing() {
   nextTick(() => {
     vidProcContext.drawImage(videoInput, 0, 0)
-    vidProcTimer = setInterval(doVideoProcessing, 200)
+    vidProcTimer = setInterval(doVideoProcessing, 50)
   })
 }
 async function doVideoProcessing() {
+  if (!isRangesValidated()) return;
   videoProcCanvas.width = videoInput.videoWidth
   videoProcCanvas.height = videoInput.videoHeight
   vidProcContext.drawImage(videoInput, 0, 0)
-  const data = vidProcContext.getImageData(0, 0, videoInput.videoWidth, videoInput.videoHeight)
+  let data: ImageData
+  try {
+    data = vidProcContext.getImageData(0, 0, videoInput.videoWidth, videoInput.videoHeight)
+  } catch (e: any) {
+    return
+  }
   let res = await window.cv.findSpectrum(data, videoInput.videoWidth, videoInput.videoHeight,
     JSON.stringify(caliblines.value),
     JSON.stringify({ begin: rowBegin.value, end: rowEnd.value }))
-  myChart.setOption({
+  currentData.value = res
+  spectrumChart.setOption({
     series: {
-      data: res
+      data: res,
+      markPoint: {
+        data: markPointData.value
+      }
     },
     xAxis: {
       min: caliblines.value.at(0).wavelength,
       max: caliblines.value.at(-1).wavelength
     }
   })
+  spectrumChart.hideLoading()
 }
 
 async function onOpitonsChanged() {
@@ -301,14 +377,14 @@ async function start() {
     navigator.mediaDevices.getUserMedia(constraints).then(gotStream).then(initDeviceList)
   })
 }
-onUnmounted(() => window.removeEventListener('resize', myChart.resize()))
+onUnmounted(() => window.removeEventListener('resize', spectrumChart.resize()))
 onBeforeUnmount(() => {
   config.calibLines = caliblines.value
   config.rowBegin = rowBegin.value
   config.rowEnd = rowEnd.value
   clearInterval(vidProcTimer)
   window.removeEventListener('resize', resizeChart)
-  myChart.dispose()
+  spectrumChart.dispose()
 })
 </script>
 <style scoped>

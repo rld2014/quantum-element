@@ -24,6 +24,7 @@ export default {
 .Filemenu,
 .Editmenu,
 .OptionsMenu {
+  display: flex;
   border-radius: 0;
   border-width: 0;
   border: 0;

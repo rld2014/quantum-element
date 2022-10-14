@@ -3,12 +3,12 @@
     <el-header class="streamSpecs">
       <el-row>
         <p>视频设备: </p>
-        <el-select v-model="videoDeviceID" class="options" placeholder="设备" @change="onDeviceChanged">
+        <el-select v-model="currentDeviceID" class="options" placeholder="设备" @change="onDeviceChanged">
           <el-option v-for="option in sourceOptionList" :key="option.deviceId" :label="option.label"
             :value="option.deviceId" />
         </el-select>
         <p>分辨率: </p>
-        <el-select v-model="vidResOption" class="options" placeholder="分辨率" @change="onOpitonsChanged">
+        <el-select v-model="currentResolution" class="options" placeholder="分辨率" @change="onOpitonsChanged">
           <el-option v-for="option in resoloutionOptionList" :key="option.label" :label="option.label"
             :value="option" />
         </el-select>
@@ -21,7 +21,7 @@
       <el-main style="display: inline-block;justify-content:center;height:100% width:100%;position: relative;">
         <video id="capture" autoplay playsineline style="display:inline-block; overflow: hidden;"></video>
         <div class="videoOverlay">
-          <img src="@/assets/crossline.png" class="crossline">
+          <img src="@/assets/CrossLine.svg" class="crossline">
         </div>
       </el-main>
     </el-scrollbar>
@@ -49,8 +49,8 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 import pinia from '@/storages'
 import { useSettings } from '@/storages/settings'
 import { storeToRefs } from 'pinia';
-const videoDeviceID = ref()
-const vidResOption = ref<videoResolutionOption>()
+const currentDeviceID = ref()
+const currentResolution = ref<videoResolutionOption>()
 const settings = useSettings(pinia)
 const { desiredVideoSettings } = storeToRefs(settings)
 const enabledSettings = ref([])
@@ -72,9 +72,9 @@ var sourceOptionList = ref<videoSourceOption[]>([])
 var resoloutionOptionList = ref<videoResolutionOption[]>([])
 async function onDeviceChanged() {
   currentStream.getVideoTracks().forEach(track => track.stop())
-  console.log(videoDeviceID.value)
+  console.log(currentDeviceID.value)
   const constraints: MediaStreamConstraints = {
-    video: { deviceId: videoDeviceID.value }
+    video: { deviceId: currentDeviceID.value }
   };
   navigator.mediaDevices.getUserMedia(constraints).then(initStreamSettings).then(initDeviceList)
 }
@@ -90,9 +90,9 @@ async function onOpitonsChanged() {
   });
   const constraints: MediaStreamConstraints = {
     video: {
-      deviceId: videoDeviceID.value,
-      width: vidResOption.value.value.width,
-      height: vidResOption.value.value.height
+      deviceId: currentDeviceID.value,
+      width: currentResolution.value.value.width,
+      height: currentResolution.value.value.height
     }
   };
   console.log(sourceOptionList)
@@ -113,7 +113,7 @@ async function initDeviceList(deviceInfos) {
     }
   }
   if (onInit) {
-    videoDeviceID.value = sourceOptionList.value[0].deviceId
+    currentDeviceID.value = sourceOptionList.value[0].deviceId
     onInit=false
   }
 }
@@ -163,7 +163,7 @@ async function initStreamSettings(stream: MediaStream, onRefresh: boolean = fals
     console.log(enabledSetting)
     enabledSettings.value.push(enabledSetting)
   }
-  vidResOption.value = resoloutionOptionList.value[0]
+  currentResolution.value = resoloutionOptionList.value[0]
 
   const video = document.querySelector('video')
   video.srcObject = stream
@@ -239,5 +239,6 @@ p {
   height: 80px;
   justify-content: center;
   align-items: center;
+  fill:red;
 }
 </style>

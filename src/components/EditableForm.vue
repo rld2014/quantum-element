@@ -24,14 +24,12 @@
       </template>
       <template #default="scope">
         <el-form-item :prop="'Measurements.'+scope.$index+'.__alpha_1'" class="all">
-          <el-container class="angleCell">
-            <el-input v-model="scope.row.__alpha1.degree" type="number" clearable v-on:change="onChanged(scope.row)">
-            </el-input> <span class="angleSymbol">°</span>
-            <el-input v-model="scope.row.__alpha1.minute" type="number" clearable v-on:change="onChanged(scope.row)">
-            </el-input> <span class="angleSymbol">'</span>
-            <el-input v-model="scope.row.__alpha1.second" type="number" clearable v-on:change="onChanged(scope.row)">
-            </el-input> <span class="angleSymbol">"</span>
-          </el-container>
+          <el-input v-model="scope.row.__alpha1.degree" type="number" clearable v-on:change="onChanged(scope.row)">
+          </el-input> <span class="angleSymbol">°</span>
+          <el-input v-model="scope.row.__alpha1.minute" type="number" clearable v-on:change="onChanged(scope.row)">
+          </el-input> <span class="angleSymbol">'</span>
+          <el-input v-model="scope.row.__alpha1.second" type="number" clearable v-on:change="onChanged(scope.row)">
+          </el-input> <span class="angleSymbol">"</span>
         </el-form-item>
       </template>
     </el-table-column>
@@ -43,14 +41,12 @@
       </template>
       <template #default="scope">
         <el-form-item :prop="'Measurements.'+scope.$index+'.__alpha_2'" class="all">
-          <el-container class="angleCell">
-            <el-input v-model="scope.row.__alpha2.degree" type="number" clearable v-on:change="onChanged(scope.row)">
-            </el-input> <span class="angleSymbol">°</span>
-            <el-input v-model="scope.row.__alpha2.minute" type="number" clearable v-on:change="onChanged(scope.row)">
-            </el-input> <span class="angleSymbol">'</span>
-            <el-input v-model="scope.row.__alpha2.second" type="number" clearable v-on:change="onChanged(scope.row)">
-            </el-input> <span class="angleSymbol">"</span>
-          </el-container>
+          <el-input v-model="scope.row.__alpha2.degree" type="number" clearable v-on:change="onChanged(scope.row)">
+          </el-input> <span class="angleSymbol">°</span>
+          <el-input v-model="scope.row.__alpha2.minute" type="number" clearable v-on:change="onChanged(scope.row)">
+          </el-input> <span class="angleSymbol">'</span>
+          <el-input v-model="scope.row.__alpha2.second" type="number" clearable v-on:change="onChanged(scope.row)">
+          </el-input> <span class="angleSymbol">"</span>
         </el-form-item>
       </template>
     </el-table-column>
@@ -82,6 +78,7 @@ import { nextTick } from "process";
 import pinia from '@/storages'
 import { useMeasurements } from '@/storages/measurements'
 import { storeToRefs } from "pinia";
+import { ElMessage } from "element-plus";
 class ResultHolder {
   wavelength: number;
   variance: Map<number, number>
@@ -116,7 +113,7 @@ interface measurement {
 }
 const props = defineProps({ 'index': String })
 const measurementStore = useMeasurements(pinia)
-let { measurements } = storeToRefs(measurementStore)
+let { measurements, gratingLineDensities } = storeToRefs(measurementStore)
 let tableMeasurements = ref([]);
 
 
@@ -133,7 +130,12 @@ onMounted(() => {
   if (measurements.value.get(props.index) == undefined) {
     measurements.value.set(props.index, [])
   }
+
   tableMeasurements.value = measurements.value.get(props.index)
+  if (gratingLineDensities.value.get(props.index) == undefined) {
+    gratingLineDensities.value.set(props.index, 0)
+  }
+  gratingLineDensity.value = gratingLineDensities.value.get(props.index)
   if (!tableMeasurements.value.length) {
     for (let i = 0; i < 5; i++) {
       tableMeasurements.value.push({
@@ -147,7 +149,10 @@ onMounted(() => {
   getTableHeight()
   window.addEventListener('resize', getTableHeight)
 })
-onUnmounted(() => window.removeEventListener('resize', getTableHeight))
+onUnmounted(() => {
+  window.removeEventListener('resize', getTableHeight)
+  gratingLineDensities.value.set(props.index, gratingLineDensity.value)
+})
 async function onChanged(row: measurement) {
   if (row.__alpha1.isValid() && row.__alpha2.isValid()) {
     row.theta =
@@ -167,14 +172,28 @@ function onAddItem() {
 
 const onDeleteRow = async (row: measurement) =>
   tableMeasurements.value.splice(measurements.value.get(props.index).indexOf(row), 1)
+
 const emit = defineEmits(['gotResult'])
 
 function checkResult() {
   let thetas = new Map<number, number[]>()
   let res = new ResultHolder
 
-  if (!gratingLineDensity.value) {
+  if (gratingLineDensity.value == 0) {
+    ElMessage({
+      message: '光栅线数不能为0！',
+      type: 'error',
+      center: true
+    })
     return;
+  }
+  if (tableMeasurements.value.length < 4) {
+    ElMessage({
+      showClose: true,
+      message: '每个波长的测量次数建议大于4次！',
+      type: 'warning',
+      center: true
+    })
   }
   tableMeasurements.value.forEach(measurement => {
     if (measurement.level) {
@@ -193,7 +212,7 @@ function checkResult() {
       let variance = 0;
       arr.forEach((value, key) => { variance += (value - mean) * (value - mean) })
       res.variance.set(level, variance)
-      res.wavelength += Math.sin(mean * Math.acos(-1) / 180) * 1E6 / gratingLineDensity.value
+      res.wavelength += Math.sin(mean * Math.acos(-1) / 180) * 1E6 / gratingLineDensity.value / level
     })
     res.wavelength /= thetas.size
     emit('gotResult', res)
@@ -227,8 +246,17 @@ function checkResult() {
   justify-content: space-around;
 }
 
+.angleCell :hover {
+  background-color: rgba(38, 39, 39, 0.4);
+}
+
 .angleSymbol {
   background: transparent;
+}
+
+.el-form-item__content {
+  flex-direction: row;
+  flex-wrap: nowrap;
 }
 </style>
   
