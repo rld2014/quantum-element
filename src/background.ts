@@ -5,6 +5,7 @@ import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 const path = require('path')
 import * as cv from 'opencv4nodejs'
 import { Mat } from 'opencv4nodejs'
+import MathJax from './scripts/MathJax'
 const isDevelopment = process.env.NODE_ENV !== 'production'
 const DESIGN_MAINWINDOW_WIDTH: number = 1280
 const DESIGN_MAINWINDOW_HEIGHT: number = 800
@@ -70,12 +71,33 @@ async function createWindow() {
   })
   ipcMain.handle('find-spectrum', async (event, ImageBuffer: ImageData, width, height, __calibLines, __rows) => {
     const buffer = Buffer.from(ImageBuffer.data.buffer)
-    let caliblines = JSON.parse(__calibLines)
+    let caliblines: Array<{ position: number, wavelength: number }> = Array.from(JSON.parse(__calibLines))
     let rows = JSON.parse(__rows)
     let mat = new cv.Mat(buffer, height, width, cv.CV_8UC4);
     mat = mat.cvtColor(cv.COLOR_BGR2GRAY)
-   
+
     const res = []
+    if (caliblines[0].position > 0)//handling the first section
+    {
+      const firstSectionWidth = caliblines[0].position * mat.cols
+      const firstRect = new cv.Rect(0, rows.begin * mat.rows, firstSectionWidth, (rows.end - rows.begin) * mat.rows)
+      const firstRegion = mat.getRegion(firstRect)
+      const firstSpectrumData = cv.reduce(firstRegion, 0, 1/*REDUCE_AVG*/)
+      const firstSectionResult = []
+      firstSpectrumData.getDataAsArray()[0].forEach((intensity, index) => {
+        firstSectionResult.push([
+          caliblines[0].wavelength + (
+            ((index / width) - caliblines[0].position) /
+            (caliblines[1].position - caliblines[0].position))
+          * (caliblines[1].wavelength - caliblines[0].wavelength),
+          intensity])
+      })
+      res.push(...firstSectionResult)
+      if (process.env.WEBPACK_DEV_SERVER_URL) {
+        mat.drawRectangle(firstRect)
+      }
+    }
+    //handling sections in between
     for (let i = 0; i < caliblines.length - 1; i++) {
       const curLine = caliblines[i]
       const nextLine = caliblines[i + 1]
@@ -83,14 +105,36 @@ async function createWindow() {
       const sectionWidth = ((nextLine.position - curLine.position) * mat.cols)
       const rect = new cv.Rect(curLine.position * mat.cols, rows.begin * mat.rows, sectionWidth, (rows.end - rows.begin) * mat.rows)
       const region = mat.getRegion(rect)
-     
-      const spectrumData = await cv.reduceAsync(region, 0, 1/*REDUCE_AVG*/)
+
+      const spectrumData = cv.reduce(region, 0, 1/*REDUCE_AVG*/)
       spectrumData.getDataAsArray()[0].forEach((intensity, index) => {
-        sectionResult.push([index / sectionWidth * (nextLine.wavelength - curLine.wavelength) + curLine.wavelength,intensity])
+        sectionResult.push([index / sectionWidth * (nextLine.wavelength - curLine.wavelength) + curLine.wavelength, intensity])
       })
       res.push(...sectionResult)
-      if (process.env.WEBPACK_DEV_SERVER_URL){
+      if (process.env.WEBPACK_DEV_SERVER_URL) {
         mat.drawRectangle(rect)
+      }
+    }
+
+    if (caliblines[caliblines.length - 1].position < 1) //handling the last section
+    {
+      const lastSectionWidth = (1 - caliblines[caliblines.length - 1].position) * mat.cols
+      const lastRect = new cv.Rect(caliblines[caliblines.length - 1].position * width, rows.begin * mat.rows, lastSectionWidth, (rows.end - rows.begin) * mat.rows)
+      const lastRegion = mat.getRegion(lastRect)
+      const lastSpectrumData = cv.reduce(lastRegion, 0, 1/*REDUCE_AVG*/)
+      const lastSectionResult = []
+      lastSpectrumData.getDataAsArray()[0].forEach((intensity, index) => {
+        lastSectionResult.push([
+          caliblines[caliblines.length - 1].wavelength + (
+            (((index / lastSectionWidth) * (1 - caliblines[caliblines.length - 1].position) + caliblines[caliblines.length - 1].position) //dx
+              - caliblines[caliblines.length - 1].position)
+            / (caliblines[caliblines.length - 2].position - caliblines[caliblines.length - 1].position))
+          * (caliblines[caliblines.length - 2].wavelength - caliblines[caliblines.length - 1].wavelength),
+          intensity])
+      })
+      res.push(...lastSectionResult)
+      if (process.env.WEBPACK_DEV_SERVER_URL) {
+        mat.drawRectangle(lastRect)
       }
     }
     if (process.env.WEBPACK_DEV_SERVER_URL) {

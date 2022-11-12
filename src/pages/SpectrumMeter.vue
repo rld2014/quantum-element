@@ -97,23 +97,27 @@ async function onCalibLineModified() {
   context.strokeStyle = "rgba(0,0,0,1)"
   context.clearRect(0, 0, width, height)
   context.fillStyle = "rgba(64, 158, 255, 0.5)"
-  context.strokeStyle = 'rgb(76,77,78)'
+  context.strokeStyle = '#FFFFFF'
   context.fillRect(
-    caliblines.value.at(0).position * width,  //x
+    0,  //x
     height * rowBegin.value,                  //y
-    (caliblines.value.at(-1).position - caliblines.value.at(0).position) * width, //width
+    width, //width
     height * (rowEnd.value - rowBegin.value)  //height
   )
   context.strokeRect(
-    caliblines.value.at(0).position * width,
-    height * rowBegin.value,
-    (caliblines.value.at(-1).position - caliblines.value.at(0).position) * width,
-    height * (rowEnd.value - rowBegin.value)
+    0,  //x
+    height * rowBegin.value,                  //y
+    width, //width
+    height * (rowEnd.value - rowBegin.value)  //height
   )
   context.beginPath()
   caliblines.value.forEach(line => {
     context.moveTo(line.position * width, 0)
     context.lineTo(line.position * width, height)
+    context.fillStyle = "#409eff"
+    context.font = '20px Noto Sans Mono'
+    context.fillText(`pos: ${line.position}`, line.position > 0.5 ? (line.position * width - 100) : (line.position * width), 0.2 * height)
+    context.fillText(`wl: ${line.wavelength}`, line.position > 0.5 ? (line.position * width - 100) : (line.position * width), 0.2 * height + 22)
   })
   context.stroke()
 }
@@ -170,7 +174,7 @@ onMounted(() => {
           icon: `image://${playBtnIcon}`,
           onclick: async function () {
             if (!vidProcTimer) {
-              vidProcTimer = setInterval(doVideoProcessing, 50)
+              vidProcTimer = setInterval(doVideoProcessing, 200)
             }
           }
         },
@@ -303,7 +307,7 @@ async function resizeChart() {
 async function initVideoProcessing() {
   nextTick(() => {
     vidProcContext.drawImage(videoInput, 0, 0)
-    vidProcTimer = setInterval(doVideoProcessing, 50)
+    vidProcTimer = setInterval(doVideoProcessing, 200)
   })
 }
 async function doVideoProcessing() {
@@ -328,10 +332,6 @@ async function doVideoProcessing() {
         data: markPointData.value
       }
     },
-    xAxis: {
-      min: caliblines.value.at(0).wavelength,
-      max: caliblines.value.at(-1).wavelength
-    }
   })
   spectrumChart.hideLoading()
 }

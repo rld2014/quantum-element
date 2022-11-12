@@ -10,7 +10,6 @@ import MathJax from '@/scripts/MathJax.js'
 import { Vue } from 'vue-class-component';
 import pinia from '@/storages'
 Object.assign(Vue.prototype, {MathJax})
-console.log(Vue.prototype)
 const app = createApp(App)
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
     app.component(key, component)
