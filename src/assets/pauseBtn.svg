@@ -3,14 +3,15 @@
 <svg version="1.1" id="图层_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 	 viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve">
 <style type="text/css">
-	.st0{fill:none;stroke:#FFFFFF;stroke-width:15;stroke-miterlimit:10;}
+	.st0{fill:#FFFFFF;}
+	.st1{fill:#FFFFFF;}
 </style>
 <g>
-	<rect x="336.8" y="6.1" class="st0" width="169.2" height="498.9"/>
-	<path class="st0" d="M504.5,7.6v495.7H338.3V7.6H504.5 M507.5,4.5H335.3v502h172.2V4.5L507.5,4.5z"/>
+	<rect x="318.5" y="97" class="st1" width="112" height="316.75"/>
+	<path class="st0" d="M192.5,99.25V414h-110V99.25H192.5 M194.5,97.25h-114V416h114V97.25L194.5,97.25z"/>
 </g>
 <g>
-	<rect x="6" y="7.1" class="st0" width="169.2" height="498.9"/>
-	<path class="st0" d="M173.7,8.6v495.7H7.5V8.6H173.7 M176.7,5.5H4.5v502h172.2V5.5L176.7,5.5z"/>
+	<rect x="318.5" y="97" class="st1" width="112" height="316.75"/>
+	<path class="st0" d="M429.5,98v314.75h-110V98H429.5 M431.5,96h-114v318.75h114V96L431.5,96z"/>
 </g>
 </svg>
